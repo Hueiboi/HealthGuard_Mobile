@@ -35,11 +35,11 @@ export const MainTabs = () => {
         }}
       />
       <Tab.Screen 
-        name="History" 
-        component={HistoryScreen} 
+        name="Records" 
+        component={RecordsScreen} 
         options={{
           tabBarIcon: ({ color }) => <Activity color={color} size={24} />,
-          tabBarLabel: 'Lịch sử'
+          tabBarLabel: 'Hồ sơ'
         }}
       />
       <Tab.Screen 
