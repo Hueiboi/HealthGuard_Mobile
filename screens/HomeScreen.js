@@ -1,23 +1,37 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator } from 'react-native';
 import { tokens } from '../theme/tokens';
 import Header from '../components/Header';
-import { 
-  Search, 
-  Bell, 
-  Bot, 
-  Activity, 
-  Calendar, 
-  FileText, 
+import {
+  Search,
+  Bell,
+  Bot,
+  Activity,
+  Calendar,
+  FileText,
   Clock,
   Heart,
   Footprints,
-  ChevronRight
+  ChevronRight,
+  ShieldCheck
 } from 'lucide-react-native';
 import { ARTICLES_DATA } from '../constants/mock/articles';
 import Badge from '../components/Badge';
 
 const HomeScreen = () => {
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // loading 1.5s
+    const timer = setTimeout(() => {
+      setData(ARTICLES_DATA);
+      setLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <Header />
@@ -116,22 +130,29 @@ const HomeScreen = () => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Góc sức khoẻ</Text>
           </View>
-          {ARTICLES_DATA.map((article) => (
-            <TouchableOpacity key={article.id} style={styles.articleCard}>
-              <Image 
-                source={require('../assets/images/article.png')} 
-                style={styles.articleImage}
-              />
-              <View style={styles.articleContent}>
-                <Badge label={article.tag} variant="primary" style={{ marginBottom: 6 }} />
-                <Text style={styles.articleTitle}>{article.title}</Text>
-                <View style={styles.articleFooter}>
-                  <Text style={styles.articleDate}>{article.date}</Text>
-                  <ChevronRight size={16} color={tokens.colors.text.secondary} />
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tokens.colors.brand.primary} />
+              <Text style={styles.loadingText}>Đang tải bài viết...</Text>
+            </View>
+          ) : (
+            data.map((article) => (
+              <TouchableOpacity key={article.id} style={styles.articleCard}>
+                <Image 
+                  source={require('../assets/images/article.png')} 
+                  style={styles.articleImage}
+                />
+                <View style={styles.articleContent}>
+                  <Badge label={article.tag} variant="primary" style={{ marginBottom: 6 }} />
+                  <Text style={styles.articleTitle}>{article.title}</Text>
+                  <View style={styles.articleFooter}>
+                    <Text style={styles.articleDate}>{article.date}</Text>
+                    <ChevronRight size={16} color={tokens.colors.text.secondary} />
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         <View style={{ height: 100 }} />
@@ -342,7 +363,17 @@ const styles = StyleSheet.create({
   articleDate: {
     fontSize: 12,
     color: tokens.colors.text.secondary,
-  }
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: tokens.colors.text.secondary,
+  },
 });
 
 export default HomeScreen;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -7,10 +7,12 @@ import {
   TouchableOpacity, 
   SafeAreaView, 
   TextInput,
-  Platform 
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { tokens } from '../theme/tokens';
 import Header from '../components/Header';
+import Badge from '../components/Badge';
 import { 
   FileText,
   Search,
@@ -20,10 +22,21 @@ import {
   ChevronRight
 } from 'lucide-react-native';
 import { RECORDS_DATA } from '../constants/mock/records';
-import Badge from '../components/Badge';
 
 const RecordScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    // loading 1.5s
+    const timer = setTimeout(() => {
+      setData(RECORDS_DATA);
+      setLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -85,10 +98,10 @@ const RecordScreen = ({ navigation }) => {
               </View>
             </View>
 
-            <View style={styles.warningBadge}>
-              <AlertCircle size={14} color="#F59E0B" style={{ marginRight: 4 }} />
-              <Text style={styles.warningText}>Khuyên gặp bác sĩ</Text>
-            </View>
+            <Badge 
+              label="KHUYÊN GẶP BÁC SĨ" 
+              variant="warning" 
+            />
           </View>
 
           <View style={styles.chartContainer}>
@@ -100,32 +113,39 @@ const RecordScreen = ({ navigation }) => {
 
         {/* Previous Records List */}
         <View style={styles.listContainer}>
-          {RECORDS_DATA.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
-              style={styles.recordItem}
-              onPress={() => navigation.navigate('DiagnosisDetail')}
-            >
-              <View style={styles.recordHeader}>
-                <Text style={styles.recordDate}>{item.date}</Text>
-                <Badge 
-                  label={item.statusLabel} 
-                  variant={item.status === 'completed' ? 'success' : 'warning'} 
-                />
-              </View>
-
-              <Text style={styles.recordTitle}>{item.title}</Text>
-
-              <View style={styles.recordFooter}>
-                <View style={styles.accuracyBox}>
-                  <FileText size={16} color={tokens.colors.text.secondary} style={{ marginRight: 6 }} />
-                  <Text style={styles.accuracyLabel}>Mức độ phù hợp: </Text>
-                  <Text style={styles.accuracyValue}>{item.accuracy}</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={tokens.colors.brand.primary} />
+              <Text style={styles.loadingText}>Đang tải lịch sử...</Text>
+            </View>
+          ) : (
+            data.map((item) => (
+              <TouchableOpacity 
+                key={item.id} 
+                style={styles.recordItem}
+                onPress={() => navigation.navigate('DiagnosisDetail')}
+              >
+                <View style={styles.recordHeader}>
+                  <Text style={styles.recordDate}>{item.date}</Text>
+                  <Badge 
+                    label={item.statusLabel} 
+                    variant={item.status === 'completed' ? 'success' : 'warning'} 
+                  />
                 </View>
-                <ChevronRight size={18} color={tokens.colors.text.secondary} />
-              </View>
-            </TouchableOpacity>
-          ))}
+
+                <Text style={styles.recordTitle}>{item.title}</Text>
+
+                <View style={styles.recordFooter}>
+                  <View style={styles.accuracyBox}>
+                    <FileText size={16} color={tokens.colors.text.secondary} style={{ marginRight: 6 }} />
+                    <Text style={styles.accuracyLabel}>Mức độ phù hợp: </Text>
+                    <Text style={styles.accuracyValue}>{item.accuracy}</Text>
+                  </View>
+                  <ChevronRight size={18} color={tokens.colors.text.secondary} />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </View>
 
         <View style={{ height: 40 }} />
@@ -398,9 +418,19 @@ const styles = StyleSheet.create({
     color: tokens.colors.text.secondary,
   },
   accuracyValue: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     color: tokens.colors.brand.primary,
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: tokens.colors.text.secondary,
   },
 });
 
