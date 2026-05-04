@@ -2,7 +2,7 @@
 export const tokens = {
   colors: {
     brand: {
-      primary: '#004AAD',
+      primary: '#0053AD',
       secondary: '#00C2FF',
     },
     surface: {

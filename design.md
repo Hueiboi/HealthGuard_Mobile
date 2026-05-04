@@ -1,10 +1,10 @@
 # Design System – Vitalis Clinical Mobile App
 
 ## Mission
-Create implementation-ready, token-driven UI guidance for Vitalis Clinical that is optimized for consistency, accessibility, and high-performance delivery across the health management mobile ecosystem.
+Create implementation-ready, token-driven UI guidance for HealthGuard that is optimized for consistency, accessibility, and high-performance delivery across the health management mobile ecosystem.
 
 ## Brand Identity
-- **Product Name:** Vitalis Clinical
+- **Product Name:** HealthGuard
 - **Industry:** Healthcare / AI Diagnosis
 - **Core Value:** Clean, Trustworthy, Modern, and Professional.
 - **Target Audience:** Patients, Healthcare Providers, and Authenticated Users.
