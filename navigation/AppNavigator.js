@@ -15,17 +15,20 @@ import RecordScreen from '../screens/RecordScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import DiagnosisDetailScreen from '../screens/DiagnosisDetailScreen';
 import { Home, Activity, User, ClockFading, Stethoscope, ClipboardList } from 'lucide-react-native';
+import RegisterScreen from '../screens/RegisterScreen';
 
+import UpdateProfileScreen from '../screens/UpdateProfileScreen';
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Temporary placeholders for missing screens
+// TẠO MÀN HÌNH TẠM CHO CÁC TÍNH NĂNG CHƯA CODE (Ví dụ: Feedback)
 const Placeholder = ({ route }) => (
-  <View className="flex-1 bg-white justify-center items-center">
-    <Text className="text-text-primary font-bold">{route.name} Screen</Text>
+  <View style={{ flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontSize: 18, fontWeight: '700', color: '#004AAD' }}>
+      Màn hình {route.name} đang phát triển...
+    </Text>
   </View>
 );
-
 
 export const MainTabs = () => {
   return (
@@ -73,20 +76,15 @@ export const MainTabs = () => {
   );
 };
 
-const AuthStack = ({ showOnboarding }) => (
-  <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={showOnboarding ? "Onboarding" : "Login"}>
-    <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-    <Stack.Screen name="Login" component={LoginScreen} />
-    <Stack.Screen name="OTP" component={OTPScreen} />
-  </Stack.Navigator>
-);
-
 export const AppNavigator = () => {
   const { user, isLoading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(null);
 
   useEffect(() => {
     const checkOnboarding = async () => {
+      // ⚠️ ĐỂ TEST ONBOARDING: Bỏ comment dòng dưới đây để app "quên" đi việc bạn đã từng xem Onboarding
+      await AsyncStorage.removeItem('@onboarding_completed');
+      
       const completed = await AsyncStorage.getItem('@onboarding_completed');
       setShowOnboarding(completed !== 'true');
     };
@@ -104,14 +102,21 @@ export const AppNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
+        // NHÓM MÀN HÌNH SAU KHI ĐĂNG NHẬP
         <>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="DiagnosisDetail" component={DiagnosisDetailScreen} />
+          <Stack.Screen name="UpdateProfile" component={UpdateProfileScreen} />
+          <Stack.Screen name="Feedback" component={Placeholder} />
         </>
       ) : (
-        <Stack.Screen name="Auth">
-          {props => <AuthStack {...props} showOnboarding={showOnboarding} />}
-        </Stack.Screen>
+        // NHÓM MÀN HÌNH CHƯA ĐĂNG NHẬP (ĐÃ LÀM PHẲNG ĐỂ FIX LỖI)
+        <>
+          {showOnboarding && <Stack.Screen name="Onboarding" component={OnboardingScreen} />}
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="OTP" component={OTPScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
       )}
     </Stack.Navigator>
   );

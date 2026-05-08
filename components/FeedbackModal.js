@@ -1,226 +1,174 @@
 import React, { useState } from 'react';
 import { 
+  Modal, 
   View, 
   Text, 
-  StyleSheet, 
-  Modal, 
-  TouchableOpacity, 
   TextInput, 
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Alert,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { tokens } from '../theme/tokens';
-import { 
-  X, 
-  Star, 
-  Smile, 
-  Meh, 
-  Frown,
-  Send
-} from 'lucide-react-native';
+import { X, MessageSquareHeart } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_BASE_URL } from '../config/api';
 
-const FeedbackModal = ({ visible, onClose, onSubmit }) => {
-  const [rating, setRating] = useState(0);
-  const [sentiment, setSentiment] = useState(null);
+const FeedbackModal = ({ visible, onClose, sessionId }) => {
   const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRating = (value) => setRating(value);
+  const handleSubmit = async () => {
+    if (!comment.trim()) {
+      Alert.alert('Thông báo', 'Vui lòng nhập nội dung góp ý.');
+      return;
+    }
 
-  const handleSubmit = () => {
-    onSubmit({ rating, sentiment, comment });
-    setRating(0);
-    setSentiment(null);
-    setComment('');
+    setIsSubmitting(true);
+    try {
+      const authData = await AsyncStorage.getItem('@AuthData');
+      const { token } = authData ? JSON.parse(authData) : {};
+
+      // THAY ĐỔI ĐƯỜNG DẪN API SANG MOBILE CONTROLLER
+      const response = await fetch(`${API_BASE_URL}/api/Mobile/Feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          comments: comment,
+          sessionId: sessionId // ID lấy từ props truyền xuống
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) { // Kiểm tra success theo chuẩn API Mobile bạn đang dùng
+        Alert.alert('Thành công', result.message);
+        setComment('');
+        onClose();
+      } else {
+        Alert.alert('Lỗi', result.message || 'Không thể gửi phản hồi.');
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể kết nối tới máy chủ.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.modalContent}
-        >
+    <Modal visible={visible} transparent={true} animationType="fade" onRequestClose={onClose}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.overlay}
+      >
+        <View style={styles.modalContainer}>
+          {/* Nút tắt */}
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <X size={20} color={tokens.colors.text.secondary} />
+          </TouchableOpacity>
+
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={tokens.colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Đóng góp ý kiến</Text>
-            <View style={{ width: 24 }} />
+            <View style={styles.iconContainer}>
+              <MessageSquareHeart size={28} color={tokens.colors.brand.primary} />
+            </View>
+            <Text style={styles.title}>Đóng góp ý kiến</Text>
+            <Text style={styles.subtitle}>
+              Kết quả chẩn đoán này có chính xác với bạn không? Hãy để lại ý kiến để hệ thống AI cải thiện tốt hơn nhé.
+            </Text>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.subtitle}>
-              Phản hồi của bạn giúp chúng tôi cải thiện độ chính xác của hệ thống Chẩn đoán AI.
-            </Text>
+          {/* Input Text Area */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.textInput}
+              placeholder="Nhập ý kiến của bạn ở đây..."
+              placeholderTextColor={tokens.colors.text.secondary}
+              multiline={true}
+              textAlignVertical="top"
+              value={comment}
+              onChangeText={setComment}
+            />
+          </View>
 
-            {/* Star Rating */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Đánh giá độ chính xác của AI</Text>
-              <View style={styles.starsContainer}>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <TouchableOpacity key={star} onPress={() => handleRating(star)}>
-                    <Star 
-                      size={32} 
-                      color={star <= rating ? '#F59E0B' : '#CBD5E1'} 
-                      fill={star <= rating ? '#F59E0B' : 'transparent'} 
-                    />
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={styles.ratingHint}>Chọn số sao để đánh giá</Text>
-            </View>
+          {/* Nút Gửi */}
+          <TouchableOpacity 
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.submitText}>Gửi phản hồi</Text>
+            )}
+          </TouchableOpacity>
 
-            {/* Sentiment Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Bạn cảm thấy thế nào về kết quả?</Text>
-              <View style={styles.sentimentList}>
-                <TouchableOpacity 
-                  style={[styles.sentimentItem, sentiment === 'happy' && styles.sentimentActive]}
-                  onPress={() => setSentiment('happy')}
-                >
-                  <Smile size={24} color={sentiment === 'happy' ? tokens.colors.brand.primary : tokens.colors.text.secondary} />
-                  <Text style={[styles.sentimentText, sentiment === 'happy' && styles.sentimentTextActive]}>Rất hữu ích</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.sentimentItem, sentiment === 'neutral' && styles.sentimentActive]}
-                  onPress={() => setSentiment('neutral')}
-                >
-                  <Meh size={24} color={sentiment === 'neutral' ? tokens.colors.brand.primary : tokens.colors.text.secondary} />
-                  <Text style={[styles.sentimentText, sentiment === 'neutral' && styles.sentimentTextActive]}>Bình thường</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity 
-                  style={[styles.sentimentItem, sentiment === 'sad' && styles.sentimentActive]}
-                  onPress={() => setSentiment('sad')}
-                >
-                  <Frown size={24} color={sentiment === 'sad' ? tokens.colors.brand.primary : tokens.colors.text.secondary} />
-                  <Text style={[styles.sentimentText, sentiment === 'sad' && styles.sentimentTextActive]}>Cần cải thiện</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Comment Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Chi tiết ý kiến (Không bắt buộc)</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Vui lòng chia sẻ thêm chi tiết về trải nghiệm của bạn với kết quả chẩn đoán..."
-                placeholderTextColor={tokens.colors.text.secondary}
-                multiline
-                textAlignVertical="top"
-                value={comment}
-                onChangeText={setComment}
-              />
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity 
-              style={[styles.submitButton, (!rating && !sentiment) && styles.buttonDisabled]}
-              onPress={handleSubmit}
-              disabled={!rating && !sentiment}
-            >
-              <Text style={styles.submitButtonText}>Gửi ý kiến</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    maxHeight: '90%',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)', // Nền tối mờ mờ
+    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
+  modalContainer: {
+    width: '88%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.1, shadowRadius: 20 },
+      android: { elevation: 10 },
+    }),
   },
   closeButton: {
-    padding: 4,
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 8,
+    zIndex: 10,
   },
-  scrollContent: {
-    padding: 24,
+  header: {
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#EEF6FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: tokens.colors.text.primary,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 14,
     color: tokens.colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
+    lineHeight: 20,
   },
-  section: {
+  inputContainer: {
     marginBottom: 24,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
-    marginBottom: 16,
-  },
-  starsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    marginBottom: 8,
-  },
-  ratingHint: {
-    fontSize: 12,
-    color: tokens.colors.text.secondary,
-    textAlign: 'center',
-  },
-  sentimentList: {
-    gap: 12,
-  },
-  sentimentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: tokens.colors.surface.muted,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-  },
-  sentimentActive: {
-    backgroundColor: '#EEF6FF',
-    borderColor: tokens.colors.brand.primary,
-  },
-  sentimentText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: tokens.colors.text.primary,
-    marginLeft: 12,
-  },
-  sentimentTextActive: {
-    color: tokens.colors.brand.primary,
-  },
-  textArea: {
+  textInput: {
     backgroundColor: tokens.colors.surface.muted,
     borderRadius: 16,
     padding: 16,
@@ -230,28 +178,15 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     backgroundColor: tokens.colors.brand.primary,
-    height: 56,
-    borderRadius: 28,
+    height: 52,
+    borderRadius: 26,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 32,
-    ...Platform.select({
-      ios: {
-        shadowColor: tokens.colors.brand.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
   },
-  buttonDisabled: {
-    opacity: 0.6,
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
-  submitButtonText: {
+  submitText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',

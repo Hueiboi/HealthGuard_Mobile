@@ -1,144 +1,195 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  TextInput,
-  Platform,
-  ActivityIndicator
-} from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { tokens } from '../theme/tokens';
 import Header from '../components/Header';
 import Badge from '../components/Badge';
-import { 
-  FileText,
-  Search,
-  SlidersHorizontal,
-  Calendar,
-  AlertCircle, 
-  ChevronRight
-} from 'lucide-react-native';
-import { RECORDS_DATA } from '../constants/mock/records';
+import { FileText, Calendar, ChevronRight, Trash2, ClipboardList } from 'lucide-react-native';
+import { useFocusEffect } from '@react-navigation/native';
+
+import { useHistoryData } from '../hooks/useHistoryData';
 
 const RecordScreen = ({ navigation }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState([]);
+  const { historyData, isLoadingHistory, fetchHistory, deleteHistoryItem, deleteAllHistory } = useHistoryData();  
+  
+  // STATE MỚI: LƯU NGÀY ĐANG ĐƯỢC CHỌN LỌC (Mặc định là 'Tất cả')
+  const [selectedDate, setSelectedDate] = useState('Tất cả');
 
-  useEffect(() => {
-    // loading 1.5s
-    const timer = setTimeout(() => {
-      setData(RECORDS_DATA);
-      setLoading(false);
-    }, 1500);
+  useFocusEffect(
+    useCallback(() => {
+      fetchHistory(); 
+    }, [fetchHistory])
+  );
 
-    return () => clearTimeout(timer);
-  }, []);
+  // ==========================================
+  // THUẬT TOÁN: LỌC RA CÁC NGÀY DUY NHẤT TỪ LỊCH SỬ
+  // ==========================================
+  const uniqueDates = useMemo(() => {
+    const dates = ['Tất cả'];
+    if (historyData && historyData.length > 0) {
+      // Tách lấy phần ngày (trước dấu phẩy) từ chuỗi "06/05/2026, 20:58"
+      const extractedDates = historyData.map(item => item.date.split(',')[0].trim());
+      // Dùng Set để loại bỏ các ngày trùng lặp
+      dates.push(...new Set(extractedDates));
+    }
+    return dates;
+  }, [historyData]);
+
+  // Lọc dữ liệu theo ngày được chọn
+  const filteredHistory = historyData ? historyData.filter(item => {
+    if (selectedDate === 'Tất cả') return true;
+    return item.date.startsWith(selectedDate);
+  }) : [];
+
+  // ==========================================
+  // XỬ LÝ XÓA
+  // ==========================================
+  const confirmDeleteOne = (id, title) => {
+    Alert.alert(
+      "Xóa kết quả này?",
+      `Bạn có chắc chắn muốn xóa kết quả "${title}" không? Hành động này không thể hoàn tác.`,
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xóa", style: "destructive", onPress: () => deleteHistoryItem(id) }
+      ]
+    );
+  };
+
+  const confirmDeleteAll = () => {
+    Alert.alert(
+      "Xóa TẤT CẢ lịch sử?",
+      "Toàn bộ kết quả chẩn đoán của bạn sẽ bị xóa sạch. Bạn có chắc chắn không?",
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xóa sạch", style: "destructive", onPress: () => {
+          deleteAllHistory();
+          setSelectedDate('Tất cả'); // Trả về 'Tất cả' sau khi xóa
+        }}
+      ]
+    );
+  };
+
+  // Chỉ hiển thị thẻ "Gần đây nhất" nếu đang xem Tất cả (để tránh trùng lặp khi lọc 1 ngày)
+  const showLatestCard = selectedDate === 'Tất cả' && historyData && historyData.length > 0;
+  const latestRecord = showLatestCard ? historyData[0] : null;
 
   return (
     <SafeAreaView style={styles.container}>
       <Header showActions={false} showSettings={true} />
       
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerSection}>
-          <Text style={styles.mainTitle}>Lịch sử chẩn đoán</Text>
-          <Text style={styles.mainSubtitle}>
-            Xem lại các kết quả kiểm tra sức khỏe bằng AI của bạn. Hãy ưu tiên thăm khám các triệu chứng có cảnh báo.
-          </Text>
-        </View>
-
-        {/* Search and Filters */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBar}>
-            <Search size={20} color={tokens.colors.text.secondary} />
-            <TextInput 
-              style={styles.searchInput}
-              placeholder="Tìm kiếm theo triệu chứng, ngày khám..."
-              placeholderTextColor={tokens.colors.text.secondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
+        
+        <View style={[styles.headerSection, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.mainTitle}>Lịch sử chẩn đoán</Text>
+            <Text style={styles.mainSubtitle}>Xem lại các kết quả kiểm tra sức khỏe bằng AI của bạn.</Text>
           </View>
+          {historyData && historyData.length > 0 && (
+            <TouchableOpacity onPress={confirmDeleteAll} style={{ padding: 8 }}>
+              <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '600' }}>Xóa tất cả</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterChip}>
-            <Calendar size={16} color={tokens.colors.text.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.filterText}>Hôm nay</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.filterChip, styles.filterChipActive]}>
-            <SlidersHorizontal size={16} color={tokens.colors.brand.primary} style={{ marginRight: 6 }} />
-            <Text style={styles.filterTextActive}>Cần lưu ý (2)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconFilterButton}>
-            <SlidersHorizontal size={18} color={tokens.colors.text.primary} />
-          </TouchableOpacity>
-        </View>
+        {/* ========================================== */}
+        {/* GIAO DIỆN BỘ LỌC NGÀY (THAY THẾ THANH TÌM KIẾM) */}
+        {/* ========================================== */}
+        {uniqueDates.length > 1 && (
+          <View style={styles.dateFilterContainer}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={styles.dateFilterScroll}
+            >
+              {uniqueDates.map((date, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[styles.dateChip, selectedDate === date && styles.dateChipActive]}
+                  onPress={() => setSelectedDate(date)}
+                >
+                  {date === 'Tất cả' && <Calendar size={14} color={selectedDate === date ? '#FFFFFF' : tokens.colors.text.secondary} style={{marginRight: 6}} />}
+                  <Text style={[styles.dateChipText, selectedDate === date && styles.dateChipTextActive]}>
+                    {date}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
-        {/* Latest Record Card */}
-        <View style={styles.sectionLabelRow}>
-          <Text style={styles.sectionLabel}>GẦN ĐÂY NHẤT • HÔM NAY, 14:30</Text>
-        </View>
-
-        <TouchableOpacity style={styles.latestCard}>
-          <View style={styles.latestInfo}>
-            <Text style={styles.latestTitle}>Hội chứng suy hô hấp cấp / Viêm phổi thùy</Text>
-            
-            <View style={styles.detailGrid}>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Triệu chứng chính</Text>
-                <Text style={styles.detailValue}>Khó thở, ho</Text>
-              </View>
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Phân loại</Text>
-                <Text style={styles.detailValue}>Bệnh hô hấp</Text>
-              </View>
+        {/* THẺ BỆNH GẦN ĐÂY NHẤT */}
+        {latestRecord && (
+          <>
+            <View style={styles.sectionLabelRow}>
+              <Text style={styles.sectionLabel}>GẦN ĐÂY NHẤT • {latestRecord.date.toUpperCase()}</Text>
             </View>
 
-            <Badge 
-              label="KHUYÊN GẶP BÁC SĨ" 
-              variant="warning" 
-            />
-          </View>
+            <TouchableOpacity style={styles.latestCard} onPress={() => navigation.navigate('DiagnosisDetail', { sessionId: latestRecord.id })}>
+              <View style={styles.latestInfo}>
+                <Text style={styles.latestTitle}>{latestRecord.title}</Text>
+                <View style={styles.detailGrid}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Triệu chứng</Text>
+                    <Text style={styles.detailValue} numberOfLines={1}>{latestRecord.mainSymptoms}</Text>
+                  </View>
+                </View>
+                <Badge label="HOÀN TẤT" variant="success" />
+              </View>
+              <View style={styles.chartContainer}>
+                <View style={styles.circleChart}>
+                  <Text style={styles.chartValue}>{latestRecord.accuracy}</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
 
-          <View style={styles.chartContainer}>
-            <View style={styles.circleChart}>
-              <Text style={styles.chartValue}>90%</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {/* Previous Records List */}
+        {/* DANH SÁCH LỊCH SỬ ĐÃ LỌC */}
         <View style={styles.listContainer}>
-          {loading ? (
+          {isLoadingHistory ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={tokens.colors.brand.primary} />
               <Text style={styles.loadingText}>Đang tải lịch sử...</Text>
             </View>
+          ) : filteredHistory.length === 0 ? (
+            // GIAO DIỆN TRỐNG KHI KHÔNG CÓ DỮ LIỆU HOẶC TÌM KHÔNG THẤY
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconWrapper}>
+                <ClipboardList size={56} color="#CBD5E1" />
+              </View>
+              <Text style={styles.emptyTitle}>
+                {historyData?.length === 0 ? 'Chưa có hồ sơ chẩn đoán' : 'Không có hồ sơ trong ngày này'}
+              </Text>
+              <Text style={styles.emptyDesc}>
+                {historyData?.length === 0 
+                  ? 'Khi bạn thực hiện chẩn đoán bệnh bằng AI, các kết quả sẽ được tự động lưu trữ và hiển thị tại đây.'
+                  : 'Vui lòng chọn một ngày khác để xem lịch sử chẩn đoán của bạn.'}
+              </Text>
+            </View>
           ) : (
-            data.map((item) => (
+            filteredHistory.map((item) => (
               <TouchableOpacity 
                 key={item.id} 
                 style={styles.recordItem}
-                onPress={() => navigation.navigate('DiagnosisDetail')}
+                onPress={() => navigation.navigate('DiagnosisDetail', { sessionId: item.id })}
               >
                 <View style={styles.recordHeader}>
                   <Text style={styles.recordDate}>{item.date}</Text>
-                  <Badge 
-                    label={item.statusLabel} 
-                    variant={item.status === 'completed' ? 'success' : 'warning'} 
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Badge label={item.statusLabel} variant="success" />
+                    <TouchableOpacity 
+                      style={{ padding: 4, marginLeft: 12 }} 
+                      onPress={() => confirmDeleteOne(item.id, item.title)}
+                    >
+                      <Trash2 size={18} color="#EF4444" opacity={0.7} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
-
+                
                 <Text style={styles.recordTitle}>{item.title}</Text>
-
                 <View style={styles.recordFooter}>
                   <View style={styles.accuracyBox}>
                     <FileText size={16} color={tokens.colors.text.secondary} style={{ marginRight: 6 }} />
-                    <Text style={styles.accuracyLabel}>Mức độ phù hợp: </Text>
+                    <Text style={styles.accuracyLabel}>Độ tin cậy: </Text>
                     <Text style={styles.accuracyValue}>{item.accuracy}</Text>
                   </View>
                   <ChevronRight size={18} color={tokens.colors.text.secondary} />
@@ -154,284 +205,54 @@ const RecordScreen = ({ navigation }) => {
   );
 };
 
+// ==========================================
+// THÊM CSS CHO CHIP LỌC NGÀY VÀ GIỮ NGUYÊN CSS CŨ
+// ==========================================
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  headerSection: {
-    marginBottom: 20,
-  },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
-    marginBottom: 8,
-  },
-  mainSubtitle: {
-    fontSize: 14,
-    color: tokens.colors.text.secondary,
-    lineHeight: 20,
-  },
-  searchContainer: {
-    marginBottom: 16,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    height: 52,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 12,
-    fontSize: 14,
-    color: tokens.colors.text.primary,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-  filterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginRight: 10,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  filterChipActive: {
-    backgroundColor: '#EEF6FF',
-    borderWidth: 1,
-    borderColor: tokens.colors.brand.primary,
-  },
-  filterText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: tokens.colors.text.primary,
-  },
-  filterTextActive: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: tokens.colors.brand.primary,
-  },
-  iconFilterButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 5,
-      },
-      android: {
-        elevation: 1,
-      },
-    }),
-  },
-  sectionLabelRow: {
-    marginBottom: 12,
-  },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: tokens.colors.text.secondary,
-    letterSpacing: 0.5,
-  },
-  latestCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
-    flexDirection: 'row',
-    marginBottom: 25,
-    ...Platform.select({
-      ios: {
-        shadowColor: tokens.colors.brand.primary,
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.08,
-        shadowRadius: 20,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  latestInfo: {
-    flex: 1,
-  },
-  latestTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
-    marginBottom: 16,
-    lineHeight: 24,
-  },
-  detailGrid: {
-    flexDirection: 'row',
-    marginBottom: 16,
-  },
-  detailItem: {
-    marginRight: 24,
-  },
-  detailLabel: {
-    fontSize: 11,
-    color: tokens.colors.text.secondary,
-    marginBottom: 4,
-  },
-  detailValue: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
-  },
-  warningBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF3C7',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  warningText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#F59E0B',
-  },
-  chartContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  circleChart: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 6,
-    borderColor: tokens.colors.brand.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#EEF6FF',
-  },
-  chartValue: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: tokens.colors.brand.primary,
-  },
-  listContainer: {
-    gap: 16,
-  },
-  recordItem: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.03,
-        shadowRadius: 10,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  recordHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  recordDate: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: tokens.colors.text.secondary,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  statusBadgeSuccess: {
-    backgroundColor: '#F0FDF4',
-  },
-  statusBadgeWarning: {
-    backgroundColor: '#FEF2F2',
-  },
-  statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  recordTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: tokens.colors.text.primary,
-    marginBottom: 16,
-  },
-  recordFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  accuracyBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  accuracyLabel: {
-    fontSize: 12,
-    color: tokens.colors.text.secondary,
-  },
-  accuracyValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: tokens.colors.brand.primary,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 14,
-    color: tokens.colors.text.secondary,
-  },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  scrollContent: { padding: 20 },
+  headerSection: { marginBottom: 20 },
+  mainTitle: { fontSize: 24, fontWeight: '700', color: tokens.colors.text.primary, marginBottom: 8 },
+  mainSubtitle: { fontSize: 14, color: tokens.colors.text.secondary, lineHeight: 20 },
+  
+  // --- CSS MỚI CHO THANH LỌC THEO NGÀY ---
+  dateFilterContainer: { marginBottom: 24, marginHorizontal: -20 },
+  dateFilterScroll: { paddingHorizontal: 20 },
+  dateChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', marginRight: 10, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5 }, android: { elevation: 1 } }) },
+  dateChipActive: { backgroundColor: tokens.colors.brand.primary, borderColor: tokens.colors.brand.primary },
+  dateChipText: { fontSize: 14, color: tokens.colors.text.secondary, fontWeight: '600' },
+  dateChipTextActive: { color: '#FFFFFF' },
+  // --------------------------------------
+
+  sectionLabelRow: { marginBottom: 12 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: tokens.colors.text.secondary, letterSpacing: 0.5 },
+  latestCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: 20, flexDirection: 'row', marginBottom: 25, ...Platform.select({ ios: { shadowColor: tokens.colors.brand.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.08, shadowRadius: 20 }, android: { elevation: 4 } }) },
+  latestInfo: { flex: 1 },
+  latestTitle: { fontSize: 18, fontWeight: '700', color: tokens.colors.text.primary, marginBottom: 16, lineHeight: 24 },
+  detailGrid: { flexDirection: 'row', marginBottom: 16 },
+  detailItem: { marginRight: 24 },
+  detailLabel: { fontSize: 11, color: tokens.colors.text.secondary, marginBottom: 4 },
+  detailValue: { fontSize: 13, fontWeight: '700', color: tokens.colors.text.primary },
+  chartContainer: { justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
+  circleChart: { width: 80, height: 80, borderRadius: 40, borderWidth: 6, borderColor: tokens.colors.brand.primary, justifyContent: 'center', alignItems: 'center', backgroundColor: '#EEF6FF' },
+  chartValue: { fontSize: 18, fontWeight: '800', color: tokens.colors.brand.primary },
+  listContainer: { gap: 16 },
+  recordItem: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 16, ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 10 }, android: { elevation: 2 } }) },
+  recordHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  recordDate: { fontSize: 11, fontWeight: '600', color: tokens.colors.text.secondary },
+  recordTitle: { fontSize: 15, fontWeight: '700', color: tokens.colors.text.primary, marginBottom: 16 },
+  recordFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  accuracyBox: { flexDirection: 'row', alignItems: 'center' },
+  accuracyLabel: { fontSize: 12, color: tokens.colors.text.secondary },
+  accuracyValue: { fontSize: 14, fontWeight: '700', color: tokens.colors.brand.primary },
+  loadingContainer: { padding: 40, alignItems: 'center', justifyContent: 'center' },
+  loadingText: { marginTop: 12, fontSize: 14, color: tokens.colors.text.secondary },
+  
+  // STYLE GIAO DIỆN TRỐNG (Empty State)
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32, paddingVertical: 40 },
+  emptyIconWrapper: { width: 100, height: 100, borderRadius: 50, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', marginBottom: 24 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: tokens.colors.text.primary, marginBottom: 8 },
+  emptyDesc: { fontSize: 14, color: tokens.colors.text.secondary, textAlign: 'center', lineHeight: 22 }
 });
 
 export default RecordScreen;

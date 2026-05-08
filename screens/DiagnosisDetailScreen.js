@@ -1,29 +1,13 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  Image,
-  Platform 
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image, Platform, ActivityIndicator } from 'react-native';
 import { tokens } from '../theme/tokens';
 import FeedbackModal from '../components/FeedbackModal';
-import { 
-  ChevronLeft, 
-  Activity, 
-  ClipboardList, 
-  Stethoscope, 
-  Microscope,
-  Send,
-  CheckCircle2,
-  FileText,
-  User
-} from 'lucide-react-native';
-import { DIAGNOSIS_DETAIL_DATA } from '../constants/mock/diagnosis';
+import { ChevronLeft, Activity, ClipboardList, Stethoscope, Microscope, Send, CheckCircle2, FileText, User } from 'lucide-react-native';
 import Badge from '../components/Badge';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../context/AuthContext';
+// IMPORT HOOK VÀO ĐÂY
+import { useHistoryData } from '../hooks/useHistoryData';
 
 const SymptomItem = ({ title, level, levelColor, description }) => (
   <View style={styles.symptomCard}>
@@ -44,114 +28,109 @@ const RecommendationItem = ({ icon: Icon, text }) => (
   </View>
 );
 
-const DiagnosisDetailScreen = ({ navigation }) => {
+const DiagnosisDetailScreen = ({ navigation, route }) => {
+  const { sessionId } = route.params || {};
   const [showFeedback, setShowFeedback] = useState(false);
+  const { user } = useAuth();
+  const [avatarUri, setAvatarUri] = useState(null);
 
-  // Mock data is now imported from constants/mockData.js
+  const { detailData, isLoadingDetail, fetchDetail } = useHistoryData();
+
+  useEffect(() => {
+  if (sessionId) fetchDetail(sessionId);
+  
+  const loadSavedAvatar = async () => {
+    try {
+      if (user && user.phoneNumber) {
+        const savedImage = await AsyncStorage.getItem(`@user_avatar_${user.phoneNumber}`); 
+        if (savedImage) setAvatarUri(savedImage);
+      }
+    } catch (error) { console.error("Lỗi lấy ảnh:", error); }
+  };
+  loadSavedAvatar();
+}, [sessionId, fetchDetail, user]); 
+
+  if (isLoadingDetail) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={tokens.colors.brand.primary} />
+        <Text style={{marginTop: 10}}>Đang tải chi tiết bệnh án...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!detailData) return <SafeAreaView style={styles.container}><Text>Không tìm thấy dữ liệu.</Text></SafeAreaView>;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <ChevronLeft size={24} color={tokens.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Kết quả chẩn đoán</Text>
         <View style={styles.avatarContainer}>
-          <Image 
-            source={require('../assets/images/avatar.png')} 
-            style={styles.avatar} 
-          />
-        </View>
+            {/* NẾU CÓ ẢNH Ở ASYNC STORAGE THÌ DÙNG, KHÔNG THÌ DÙNG ẢNH MẶC ĐỊNH */}
+            <Image 
+              source={avatarUri ? { uri: avatarUri } : require('../assets/images/avatar.png')} 
+              style={styles.avatar} 
+            />
+          </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Main Card */}
         <View style={styles.mainCard}>
           <View style={styles.mainCardContent}>
-            <Badge 
-              label="Chẩn đoán chính" 
-              variant="primary" 
-              icon={CheckCircle2} 
-              style={{ marginBottom: 12 }} 
-            />
-            <Text style={styles.mainTitle}>{DIAGNOSIS_DETAIL_DATA.title}</Text>
-            <Text style={styles.icdCode}>{DIAGNOSIS_DETAIL_DATA.icdCode}</Text>
+            <Badge label="Chẩn đoán AI" variant="primary" icon={CheckCircle2} style={{ marginBottom: 12 }} />
+            <Text style={styles.mainTitle}>{detailData.title}</Text>
+            <Text style={styles.icdCode}>Mã ICD: {detailData.icdCode}</Text>
             
             <View style={styles.accuracyCard}>
-              <Text style={styles.accuracyValue}>{DIAGNOSIS_DETAIL_DATA.accuracy}</Text>
+              <Text style={styles.accuracyValue}>{detailData.accuracy}</Text>
               <Text style={styles.accuracyLabel}>Độ tin cậy AI</Text>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: DIAGNOSIS_DETAIL_DATA.accuracy }]} />
-              </View>
+              <View style={styles.progressBar}><View style={[styles.progressFill, { width: detailData.accuracy }]} /></View>
             </View>
           </View>
-          <View style={styles.microscopeIcon}>
-            <Microscope size={80} color="#F1F5F9" />
-          </View>
+          <View style={styles.microscopeIcon}><Microscope size={80} color="#F1F5F9" /></View>
         </View>
 
-        {/* Symptom Analysis */}
+        
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Activity size={20} color={tokens.colors.brand.primary} />
-            <Text style={styles.sectionTitle}>Phân tích triệu chứng</Text>
-          </View>
-          {DIAGNOSIS_DETAIL_DATA.symptoms.map((s, i) => (
-            <SymptomItem key={i} {...s} />
-          ))}
+          <View style={styles.sectionHeader}><Activity size={20} color={tokens.colors.brand.primary} /><Text style={styles.sectionTitle}>Triệu chứng đã chọn</Text></View>
+          {detailData.symptoms.map((s, i) => <SymptomItem key={i} {...s} />)}
         </View>
 
-        {/* Recommendations */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Stethoscope size={20} color={tokens.colors.brand.primary} />
-            <Text style={styles.sectionTitle}>Khuyến nghị bước tiếp theo</Text>
-          </View>
+          <View style={styles.sectionHeader}><Stethoscope size={20} color={tokens.colors.brand.primary} /><Text style={styles.sectionTitle}>Khuyến nghị điều trị</Text></View>
           <View style={styles.recommendationsCard}>
-            {DIAGNOSIS_DETAIL_DATA.recommendations.map((r, i) => {
+            {detailData.recommendations.map((r, i) => {
               const Icon = r.type === 'file' ? FileText : (r.type === 'activity' ? Activity : User);
               return <RecommendationItem key={i} icon={Icon} text={r.text} />;
             })}
           </View>
         </View>
 
-        {/* Differential Diagnosis */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <ClipboardList size={20} color={tokens.colors.brand.primary} />
-            <Text style={styles.sectionTitle}>Chẩn đoán phân biệt</Text>
+        {detailData.differential && detailData.differential.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}><ClipboardList size={20} color={tokens.colors.brand.primary} /><Text style={styles.sectionTitle}>Có thể liên quan đến</Text></View>
+            <View style={styles.tableCard}>
+              {detailData.differential.map((d, i) => (
+                <View key={i} style={[styles.tableRow, i === detailData.differential.length - 1 && { borderBottomWidth: 0 }]}><Text style={styles.tableName}>{d.name}</Text><Text style={styles.tableValue}>{d.value}</Text></View>
+              ))}
+            </View>
           </View>
-          <View style={styles.tableCard}>
-            {DIAGNOSIS_DETAIL_DATA.differential.map((d, i) => (
-              <View key={i} style={[styles.tableRow, i === DIAGNOSIS_DETAIL_DATA.differential.length - 1 && { borderBottomWidth: 0 }]}>
-                <Text style={styles.tableName}>{d.name}</Text>
-                <Text style={styles.tableValue}>{d.value}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        )}
 
-        {/* Buttons */}
         <TouchableOpacity style={styles.feedbackButton} onPress={() => setShowFeedback(true)}>
           <Send size={20} color="#FFFFFF" style={{ marginRight: 10 }} />
-          <Text style={styles.feedbackButtonText}>Gửi phản hồi</Text>
+          <Text style={styles.feedbackButtonText}>Đóng góp dữ liệu cho AI</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.printButton}>
-          <Text style={styles.printButtonText}>In kết quả</Text>
-        </TouchableOpacity>
-
         <View style={{ height: 40 }} />
       </ScrollView>
 
       <FeedbackModal 
         visible={showFeedback} 
-        onClose={() => setShowFeedback(false)}
-        onSubmit={(data) => {
-          console.log('Feedback:', data);
-          setShowFeedback(false);
-        }}
+        onClose={() => setShowFeedback(false)} 
+        sessionId={sessionId} // 
       />
     </SafeAreaView>
   );
@@ -167,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: Platform.OS === 'android' ? 40 : 20,
     backgroundColor: '#FFFFFF',
   },
   headerTitle: {
