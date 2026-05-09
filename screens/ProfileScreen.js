@@ -39,10 +39,10 @@ const ProfileScreen = () => {
         } catch (e) { console.log(e); }
       };
       loadAvatar();
-    }, [user]) // Nhớ để dependency là user để đảm bảo lấy đúng ảnh
+    }, [user]) 
   );
 
-  // HÀM HIỂN THỊ THÔNG BÁO TÍNH NĂNG ĐANG PHÁT TRIỂN
+  // NOTE: HÀM HIỂN THỊ THÔNG BÁO TÍNH NĂNG ĐANG PHÁT TRIỂN
   const handleFeatureUnderDevelopment = () => {
     Alert.alert(
       "Đang phát triển ",

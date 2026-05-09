@@ -22,9 +22,7 @@ const RegisterScreen = () => {
   // THÊM STATE ĐỂ LƯU LỖI CHO TỪNG Ô
   const [errors, setErrors] = useState({ fullName: '', phoneNumber: '', dateOfBirth: '' });
 
-  // ==========================================
   // HÀM VALIDATE
-  // ==========================================
   const validateFullName = (text) => {
     if (!text || text.trim() === '') return 'Vui lòng nhập họ và tên.';
     
@@ -70,11 +68,9 @@ const RegisterScreen = () => {
     return '';
   };
 
-  // ==========================================
   // XỬ LÝ KHI NGƯỜI DÙNG ĐANG NHẬP (REAL-TIME)
-  // ==========================================
   const handleNameChange = (text) => {
-    // 1. Tự động viết hoa chữ cái đầu tiên của mỗi từ
+    // Tự động viết hoa chữ cái đầu tiên của mỗi từ
     const formattedName = text.split(' ').map(word => {
       if (word.length > 0) {
         return word.charAt(0).toUpperCase() + word.slice(1);
@@ -82,7 +78,7 @@ const RegisterScreen = () => {
       return '';
     }).join(' ');
 
-    // 2. Cập nhật vào State
+    // Cập nhật vào State
     setFullName(formattedName);
     setErrors(prev => ({ ...prev, fullName: validateFullName(formattedName) }));
   };
@@ -119,9 +115,7 @@ const RegisterScreen = () => {
     }
   };
 
-  // ==========================================
   // XỬ LÝ SUBMIT
-  // ==========================================
   const handleRegister = async () => {
     const nameErr = validateFullName(fullName);
     const phoneErr = validatePhone(phoneNumber);

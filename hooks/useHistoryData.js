@@ -13,7 +13,7 @@ export const useHistoryData = () => {
 
   const [userProfile, setUserProfile] = useState(null);
 
-  // 1. Hàm gọi API lấy danh sách Lịch sử
+  // Hàm gọi API lấy danh sách Lịch sử
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
@@ -35,7 +35,7 @@ export const useHistoryData = () => {
     }
   }, []);
 
-  // 2. Hàm gọi API lấy Chi tiết một phiên khám
+  // Hàm gọi API lấy Chi tiết một phiên khám
   const fetchDetail = useCallback(async (sessionId) => {
     setIsLoadingDetail(true);
     try {
@@ -98,7 +98,7 @@ export const useHistoryData = () => {
     }
   };
 
-  // THÊM HÀM XÓA TẤT CẢ
+  // Hàm xoá toàn bộ lịch sử chẩn đoán
   const deleteAllHistory = async () => {
     try {
       const authData = await AsyncStorage.getItem('@AuthData');

@@ -101,8 +101,7 @@ export const AppNavigator = () => {
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
-        // NHÓM MÀN HÌNH SAU KHI ĐĂNG NHẬP
+      {user ? ( // Màn hình hiển thị dựa trên user có tồn tại hay không
         <>
           <Stack.Screen name="Main" component={MainTabs} />
           <Stack.Screen name="DiagnosisDetail" component={DiagnosisDetailScreen} />
@@ -110,7 +109,6 @@ export const AppNavigator = () => {
           <Stack.Screen name="Feedback" component={Placeholder} />
         </>
       ) : (
-        // NHÓM MÀN HÌNH CHƯA ĐĂNG NHẬP (ĐÃ LÀM PHẲNG ĐỂ FIX LỖI)
         <>
           {showOnboarding && <Stack.Screen name="Onboarding" component={OnboardingScreen} />}
           <Stack.Screen name="Login" component={LoginScreen} />

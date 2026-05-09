@@ -4,7 +4,7 @@ import { tokens } from '../theme/tokens';
 import { ChevronRight, ShieldCheck, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '../context/AuthContext';
 
-// Bổ sung tham số route để nhận dữ liệu truyền từ màn hình Login sang
+// NOTE: Bổ sung tham số route để nhận dữ liệu truyền từ màn hình Login sang
 const OTPScreen = ({ navigation, route }) => {
   // Lấy hàm verifyOtp và sendOtp từ context
   const { verifyOtp, sendOtp } = useAuth(); 
@@ -61,7 +61,6 @@ const OTPScreen = ({ navigation, route }) => {
 
     if (result.success) {
       // Nếu thành công, Context sẽ tự update State và đẩy vào App chính
-      // Không cần navigation.navigate ở đây nữa
     } else {
       Alert.alert('Xác thực thất bại', result.message);
     }

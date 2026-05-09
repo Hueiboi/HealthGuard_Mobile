@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react'; 
-// ĐÃ THÊM IMPORT 'Keyboard'
 import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAreaView, Platform, Image, KeyboardAvoidingView, ActivityIndicator, Modal, Keyboard } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native'; 
 import { ArrowLeft, Pencil, Smartphone, Calendar, ChevronDown, CheckCircle2 } from 'lucide-react-native';

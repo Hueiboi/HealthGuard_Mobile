@@ -46,7 +46,7 @@ export const useHomeData = () => {
       };
       
       if (user?.token) fetchDashboardData();
-    }, [user]) // Dấu ngoặc vuông này báo hiệu: Kéo lại khi user thay đổi
+    }, [user]) // Reload khi user thay đổi
   );
 
   return { homeData, isLoading };

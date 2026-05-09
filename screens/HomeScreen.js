@@ -14,7 +14,7 @@ const HomeScreen = () => {
   const [loadingArticles, setLoadingArticles] = useState(true);
   const navigation = useNavigation();
   
-  const { homeData, isLoading: loadingHome } = useHomeData();
+  const {homeData, isLoading: loadingHome } = useHomeData();
 
   useEffect(() => {
     const timer = setTimeout(() => {

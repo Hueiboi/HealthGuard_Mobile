@@ -11,7 +11,7 @@ import { useHistoryData } from '../hooks/useHistoryData';
 const RecordScreen = ({ navigation }) => {
   const { historyData, isLoadingHistory, fetchHistory, deleteHistoryItem, deleteAllHistory } = useHistoryData();  
   
-  // STATE MỚI: LƯU NGÀY ĐANG ĐƯỢC CHỌN LỌC (Mặc định là 'Tất cả')
+  // NOTE: LƯU NGÀY ĐANG ĐƯỢC CHỌN LỌC (Mặc định là 'Tất cả')
   const [selectedDate, setSelectedDate] = useState('Tất cả');
 
   useFocusEffect(
@@ -20,9 +20,7 @@ const RecordScreen = ({ navigation }) => {
     }, [fetchHistory])
   );
 
-  // ==========================================
   // THUẬT TOÁN: LỌC RA CÁC NGÀY DUY NHẤT TỪ LỊCH SỬ
-  // ==========================================
   const uniqueDates = useMemo(() => {
     const dates = ['Tất cả'];
     if (historyData && historyData.length > 0) {
@@ -40,9 +38,7 @@ const RecordScreen = ({ navigation }) => {
     return item.date.startsWith(selectedDate);
   }) : [];
 
-  // ==========================================
   // XỬ LÝ XÓA
-  // ==========================================
   const confirmDeleteOne = (id, title) => {
     Alert.alert(
       "Xóa kết quả này?",

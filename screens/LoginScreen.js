@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TextInput, TouchableOpacity, SafeAreaView, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { tokens } from '../theme/tokens';
-// Đổi ChevronRight thành ArrowRight cho giống thiết kế
 import { ArrowRight, Fingerprint, Smartphone } from 'lucide-react-native'; 
-import { FontAwesome5 } from '@expo/vector-icons'; // Dùng icon cho giống hệt màn Splash
+import { FontAwesome5 } from '@expo/vector-icons'; 
 import { useAuth } from '../context/AuthContext'; 
 
 const LoginScreen = ({ navigation }) => {

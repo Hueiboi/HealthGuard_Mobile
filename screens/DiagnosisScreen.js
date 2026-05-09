@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, SafeAr
 import { tokens } from '../theme/tokens';
 import Header from '../components/Header';
 import FeedbackModal from '../components/FeedbackModal';
-// BỔ SUNG THÊM ChevronDown, ChevronUp TỪ LUCIDE
 import { Stethoscope, AlertCircle, ClipboardList, Info, ChevronDown, ChevronUp } from 'lucide-react-native';
 
 import { useDiagnosisData } from '../hooks/useDiagnosisData';

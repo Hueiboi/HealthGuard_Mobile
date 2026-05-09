@@ -30,7 +30,7 @@ export const useDiagnosisData = () => {
     }
   };
 
-  // HÀM MỚI BỔ SUNG: GỬI DỮ LIỆU CHẨN ĐOÁN LÊN C#
+  // Hàm gửi dữ liệu chẩn đoán
   const submitDiagnosis = async (mainSymptomDescription, painLevel, symptomIds) => {
     try {
       const authData = await AsyncStorage.getItem('@AuthData');
@@ -50,7 +50,7 @@ export const useDiagnosisData = () => {
       });
       
       const data = await response.json();
-      return data; // Trả về cho Screen xử lý
+      return data; 
     } catch (error) {
       console.error("Lỗi gửi chẩn đoán:", error);
       return { success: false, message: "Không thể kết nối đến máy chủ." };

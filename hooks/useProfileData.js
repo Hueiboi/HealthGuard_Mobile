@@ -51,7 +51,7 @@ export const useProfileData = () => {
                 email: result.data.email || user?.email || 'chua-cap-nhat@email.com',
                 emergencyContact: result.data.emergencyContact || '0000000000',
                 avatarUrl: fetchedAvatar,
-                // BỔ SUNG ĐỌC DỮ LIỆU TỪ SERVER:
+                // NOTE: BỔ SUNG ĐỌC DỮ LIỆU TỪ SERVER
                 allergies: result.data.allergies || '',
                 gender: result.data.gender || 'Nam'
               }));
@@ -99,7 +99,7 @@ export const useProfileData = () => {
           Email: formData.email, 
           EmergencyContact: formData.emergencyContact,
           AvatarUrl: formData.avatarUrl,
-          // BỔ SUNG GỬI LÊN SERVER:
+          // NOTE: BỔ SUNG GỬI LÊN SERVER
           Allergies: formData.allergies,
           Gender: formData.gender 
         })
