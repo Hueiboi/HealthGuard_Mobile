@@ -34,7 +34,11 @@ const DiagnosisScreen = ({ navigation }) => {
     setIsAnalyzing(true);
     setDiagnosisResults([]); 
 
-    const response = await submitDiagnosis(symptoms, painLevel, selectedSymptomIds);
+    const response = await submitDiagnosis({ 
+      mainSymptomDescription: symptoms,
+      painLevel: painLevel,
+      symptomIds: selectedSymptomIds
+    });
     
     setIsAnalyzing(false);
 
