@@ -19,7 +19,6 @@ const DiagnosisScreen = ({ navigation }) => {
   
   const [diagnosisResults, setDiagnosisResults] = useState([]);
   
-  // STATE ĐIỀU KHIỂN ĐÓNG/MỞ DANH SÁCH TRIỆU CHỨNG
   const [isExpanded, setIsExpanded] = useState(false);
 
   const toggleSymptom = (id) => {
@@ -98,7 +97,6 @@ const DiagnosisScreen = ({ navigation }) => {
             <Text style={{ fontSize: 13, color: tokens.colors.text.secondary }}>Chưa có dữ liệu triệu chứng từ hệ thống.</Text>
           ) : (
             <View>
-              {/* CẮT DANH SÁCH: CHỈ LẤY 6 CÁI ĐẦU NẾU CHƯA BUNG RA */}
               <View style={styles.checkboxGrid}>
                 {(isExpanded ? availableSymptoms : availableSymptoms.slice(0, 6)).map((sym) => {
                   const isSelected = selectedSymptomIds.includes(sym.id);
@@ -109,13 +107,13 @@ const DiagnosisScreen = ({ navigation }) => {
                       onPress={() => toggleSymptom(sym.id)}
                     >
                       <View style={[styles.checkCircle, isSelected && styles.checkCircleActive]} />
-                      <Text style={styles.checkboxLabel} numberOfLines={1}>{sym.symptomName}</Text>
+                      {/* ĐÃ SỬA: Tăng numberOfLines lên 2 để chữ dài được rớt dòng gọn gàng */}
+                      <Text style={styles.checkboxLabel} numberOfLines={2}>{sym.symptomName}</Text>
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              {/* NÚT BẤM XEM THÊM / THU GỌN */}
               {availableSymptoms.length > 6 && (
                 <TouchableOpacity 
                   style={styles.toggleButton} 
@@ -206,13 +204,15 @@ const styles = StyleSheet.create({
   painNumText: { fontSize: 12, fontWeight: '600', color: tokens.colors.text.secondary },
   painNumTextActive: { color: '#FFFFFF' },
   checkboxGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
-  checkboxItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: tokens.colors.surface.muted, padding: 12, borderRadius: 12, width: '48%', marginBottom: 12 },
+  // ĐÃ SỬA: Chỉnh alignItems thành 'flex-start' để tick box và chữ dài căn đều ở phía trên
+  checkboxItem: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: tokens.colors.surface.muted, padding: 12, borderRadius: 12, width: '48%', marginBottom: 12 },
   checkboxActive: { backgroundColor: '#EEF6FF', borderColor: tokens.colors.brand.primary, borderWidth: 1 },
-  checkCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#CBD5E1', marginRight: 8 },
+  // ĐÃ SỬA: Thêm marginTop nhỏ để icon tick cân đối với dòng chữ đầu tiên
+  checkCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#CBD5E1', marginRight: 8, marginTop: 1 },
   checkCircleActive: { borderColor: tokens.colors.brand.primary, backgroundColor: tokens.colors.brand.primary },
-  checkboxLabel: { fontSize: 13, fontWeight: '600', color: tokens.colors.text.primary },
+  // ĐÃ SỬA: Gắn flex: 1 để text tự động cuộn gọn trong thẻ cha, không đâm thủng layout
+  checkboxLabel: { flex: 1, fontSize: 13, fontWeight: '600', color: tokens.colors.text.primary, lineHeight: 18 },
   
-  // STYLE MỚI CHO NÚT XEM THÊM / THU GỌN
   toggleButton: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
   toggleButtonText: { fontSize: 14, fontWeight: '600', color: tokens.colors.brand.primary, marginRight: 4 },
   
