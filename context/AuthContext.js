@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { Alert } from 'react-native'; // 👉 ĐÃ THÊM THƯ VIỆN NÀY ĐỂ BẬT POPUP
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '../config/api';
 
@@ -26,20 +27,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // HÀM MỚI: CẬP NHẬT DỮ LIỆU USER NGAY TRÊN RAM
   const updateUserData = async (newData) => {
     if (user) {
       const updatedUser = { ...user, ...newData }; 
-      setUser(updatedUser); // Cập nhật ngay lập tức cho Header
+      setUser(updatedUser); 
       try {
-        await AsyncStorage.setItem('@AuthData', JSON.stringify(updatedUser)); // Lưu xuống máy
+        await AsyncStorage.setItem('@AuthData', JSON.stringify(updatedUser)); 
       } catch (e) {
         console.error("Lỗi cập nhật AuthData:", e);
       }
     }
   };
 
-  // 1. HÀM GỬI OTP
   const sendOtp = async (phoneNumber) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/Mobile/SendOtp`, {
@@ -48,13 +47,24 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ phoneNumber }),
       });
       const data = await response.json();
+
+      if (response.ok && data.success) {
+
+        setTimeout(() => {
+          Alert.alert(
+            "📱 Tin nhắn SMS mới",
+            `[HealthGuard] Mã xác thực OTP của bạn là: ${data.otp}. Mã có hiệu lực trong 60 giây. Vui lòng không chia sẻ mã này.`,
+            [{ text: "Đóng" }]
+          );
+        }, 3000);
+      }
+
       return { success: response.ok, message: data.message };
     } catch (error) {
       return { success: false, message: "Không thể kết nối đến máy chủ Backend." };
     }
   };
 
-  // 2. HÀM XÁC THỰC OTP
   const verifyOtp = async (phoneNumber, otpCode) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/Mobile/VerifyOtp`, {
@@ -81,7 +91,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 3. HÀM ĐĂNG KÝ 
   const register = async (fullName, phoneNumber, dateOfBirth) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/Mobile/Register`, {
@@ -112,7 +121,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    // Đã thêm updateUserData vào dòng dưới
     <AuthContext.Provider value={{ user, sendOtp, verifyOtp, register, logout, isLoading, updateUserData }}>
       {children}
     </AuthContext.Provider>
